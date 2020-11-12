@@ -1,0 +1,113 @@
+---
+title: "French given names per year per department"
+author: "Lucas Mello Schnorr, Jean-Marc Vincent"
+date: "November, 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The aim of the activity is to develop a methodology to answer a specific question on a given dataset. 
+
+The dataset is the set of Firstname given in France on a large period of time. 
+[given names data set of INSEE](https://www.insee.fr/fr/statistiques/fichier/2540004/dpt2017_txt.zip), we choose this dataset because it is sufficiently large, you can't do the analysis by hand, the structure is simple
+
+
+You need to use the _tidyverse_ for this analysis. Unzip the file _dpt2019_txt.zip_ (to get the **dpt2019.csv**). Read in R with this code. Note that you might need to install the `readr` package with the appropriate command.
+
+## Download Raw Data from the website
+```{r}
+file = "dpt2019_txt.zip"
+if(!file.exists(file)){
+  download.file("https://www.insee.fr/fr/statistiques/fichier/2540004/dpt2019_csv.zip",
+	destfile=file)
+}
+unzip(file)
+```
+
+## Build the Dataframe from file. We see that the data has rows with unexpected values.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+FirstNames <- read_delim("dpt2019.csv",delim=";");
+```
+
+## Show structure of the loaded data
+
+```{r}
+str(FirstNames)
+
+```
+## Clean data from wrong types
+
+```{r}
+unique(select(problems(FirstNames), col, actual))
+```
+
+```{r}
+FirstNamesClean <- filter(FirstNames, annais!="XXXX" & preusuel!="_PRENOMS_RARES")
+```
+
+
+Translation in english of variables names: 
+sexe -> gender 
+preusuel (prénom usuel) -> Firstname
+annais (année de naissance) -> Birth year
+dpt (département) -> department (administrative area unit)
+nombre -> number
+
+All of these following questions may need a preliminary analysis of the data, feel free to present answers and justifications in your own order and structure your report as it should be for a scientific report.
+
+1. Choose a firstname and analyse its frequency along time. Compare several firstnames frequency
+
+
+Here we are showing frequency along the years of 3 different male names that start with the letter H. We can see that names Hubert and Henri were popular around the beginning of the century, Hugues around the middle and that the name Hugo has become popular around the end of the century.
+
+```{r}
+Hubert <- summarise(group_by(select(filter(FirstNamesClean, preusuel=="HUBERT"), annais, nombre), annais), nombre=sum(nombre))
+ggplot(data=Hubert, aes(x=annais, y=nombre))+geom_bar(stat="identity")
+```
+```{r}
+Hugo <- summarise(group_by(select(filter(FirstNamesClean, preusuel=="HUGO"), annais, nombre), annais), nombre=sum(nombre))
+ggplot(data=Hugo, aes(x=annais, y=nombre))+geom_bar(stat="identity")
+```
+
+
+```{r}
+Henri <- summarise(group_by(select(filter(FirstNamesClean, preusuel=="HENRI"), annais, nombre), annais), nombre=sum(nombre))
+ggplot(data=Henri, aes(x=annais, y=nombre))+geom_bar(stat="identity")
+```
+```{r}
+Hugues <- summarise(group_by(select(filter(FirstNamesClean, preusuel=="HUGUES"), annais, nombre), annais), nombre=sum(nombre))
+ggplot(data=Hugues, aes(x=annais, y=nombre))+geom_bar(stat="identity")
+```
+
+
+2. Establish by gender the most given firstname by year. Analyse the evolution of the most frequent firstname.
+
+```{r}
+
+HighestOccurence <- unique(filter(group_by(summarise(group_by(FirstNamesClean, annais, preusuel), sum_nombre = sum(nombre), sexe), annais), sum_nombre == max(sum_nombre)))
+  
+  #filter(), n == max(sum_nombre))
+
+HighestOccurenceWomen <- filter(HighestOccurence, sexe==2)
+HighestOccurenceMen <- filter(HighestOccurence, sexe==1)
+
+```
+
+
+```{r}
+ggplot(data = HighestOccurenceMen, aes(x=annais, y=sum_nombre, color = preusuel))+geom_point()
+
+```
+```{r}
+ggplot(data = HighestOccurenceWomen, aes(x=annais, y=sum_nombre, color = preusuel))+geom_point()
+```
